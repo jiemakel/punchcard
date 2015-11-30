@@ -1,0 +1,22 @@
+.container
+  h4 Punchcard
+  .form-group
+    label Endpoint
+    input.form-control(type="text",ng-model="endpoint")
+  .form-group
+    label Label language preference order
+    input.form-control(type="text",ng-model="labelLanguages")
+  .form-group
+    label Join multiple values using
+    input.form-control(type="text",ng-model="joinSeparator")
+  .checkbox: label
+    input(type="checkbox",ng-model="joinMultipleValues")
+    | Use labels even when non-unique
+  yasqe(data="propertiesQuery",endpoint="endpoint",callback="setResults")
+  table.table.table-striped
+    tr: th(ng-repeat="property in properties")
+      .checkbox: label
+        input(type="checkbox",ng-model="property.selected")
+        | {{property.label}}
+      span.label.label-warningß(ng-show="property.nonunique != 0") {{property.nonunique}}
+    tr(ng-repeat="object in exampleObjects"): td(ng-repeat="value in object") {{value}} 

@@ -6,7 +6,9 @@
     "jquery": "~2.1.4",
     "angular-ui-router": "~0.2.15",
     "angular-http-auth": "~1.2.2",
-    "bootstrap": "~3.3.5"
+    "yasqe": "yasgui-yasqe#~2.6.3",
+    "yasr": "yasgui-yasr#~2.6.3",
+    "bootstrap": "~3.3.6"
   },
   "overrides": {
     "bootstrap": {
@@ -18,7 +20,19 @@
         "dist/fonts/glyphicons-halflings-regular.svg",
         "dist/fonts/glyphicons-halflings-regular.ttf",
         "dist/fonts/glyphicons-halflings-regular.woff",
-	"dist/fonts/glyphicons-halflings-regular.woff2"
+        "dist/fonts/glyphicons-halflings-regular.woff2"
+      ]
+    },
+    "yasqe": {
+      "main": [
+        "dist/yasqe.bundled.js",
+        "dist/yasqe.css"
+      ]
+    },
+    "yasr": {
+      "main": [
+        "dist/yasr.bundled.js",
+        "dist/yasr.css"
       ]
     }
   },

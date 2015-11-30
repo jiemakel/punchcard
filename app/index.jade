@@ -5,6 +5,8 @@ html(lang="en",ng-app="app",ng-hint)
     meta(name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width")
     // build:css(app) styles/vendor.css
     // bower:css
+    link(rel='stylesheet', href='bower_components/yasqe/dist/yasqe.css')
+    link(rel='stylesheet', href='bower_components/yasr/dist/yasr.css')
     link(rel='stylesheet', href='bower_components/bootstrap/dist/css/bootstrap.css')
     // endbower
     // endbuild
@@ -32,6 +34,8 @@ html(lang="en",ng-app="app",ng-hint)
     script(src='bower_components/jquery/dist/jquery.js')
     script(src='bower_components/angular-ui-router/release/angular-ui-router.js')
     script(src='bower_components/angular-http-auth/src/http-auth-interceptor.js')
+    script(src='bower_components/yasqe/dist/yasqe.bundled.js')
+    script(src='bower_components/yasr/dist/yasr.bundled.js')
     script(src='bower_components/bootstrap/dist/js/bootstrap.js')
     // endbower
     // endbuild
@@ -40,6 +44,8 @@ html(lang="en",ng-app="app",ng-hint)
     script(src="scripts/app.js")
     script(src="scripts/main-ctrl.js")
     script(src="scripts/sparql-service.js")
+    script(src="scripts/yasqe-directive.js")
+    script(src="scripts/yasr-directive.js")
     // inject:partials
     // endinject
     // endbuild

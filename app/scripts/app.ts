@@ -4,7 +4,7 @@ namespace app {
   m.config(($stateProvider: angular.ui.IStateProvider, $urlRouterProvider: angular.ui.IUrlRouterProvider) => {
     $urlRouterProvider.otherwise('/')
     $stateProvider.state('main', {
-      url: '/',
+      url: '/?endpoint',
       templateUrl: 'partials/main.html',
       controller: 'MainController'
       })
