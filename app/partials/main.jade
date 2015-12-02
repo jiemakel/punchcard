@@ -1,3 +1,5 @@
+script(type="text/ng-template",id="popover.html")
+  ul: li(ng-repeat="object in property.nonUniqueObjects") {{object.objectLabel}}:&nbsp;{{object.objects}}
 .container
   h4 Punchcard
   .form-group
@@ -9,11 +11,17 @@
   .form-group
     label Join multiple values using
     input.form-control(type="text",ng-model="joinSeparator")
-  yasqe(data="propertiesQuery",endpoint="endpoint",callback="setResults")
+  yasqe(yasqe="propertiesQueryEditor",data="propertiesQuery",endpoint="endpoint",callback="setResults")
   table.table.table-striped
-    tr: th(ng-repeat="property in properties")
+    tr(ui-sortable,ng-model="properties"): th(ng-repeat="property in properties")
+      {{property.label}}
       .checkbox: label
-        input(type="checkbox",ng-model="property.selected")
-        | {{property.label}}
-      span.label.label-warning(ng-show="property.nonunique != 0 && property.resources") !
+        input(type="checkbox",ng-model="property.selectValue")
+        | V
+      .checkbox(ng-show="property.resources && property.objectLabels!=0"): label
+        input(type="checkbox",ng-model="property.selectLabel")
+        | L
+      span.label.label-warning(ng-mouseenter="selectNonUniques(property)",popover-placement="right",popover-trigger="mouseenter",uib-popover-template="'popover.html'",ng-show="property.objectLabels != property.objects && property.resources") {{property.objects - property.objectLabels}}
+      span.label.label-info(ng-show="property.subjects != property.statements") {{property.statements - property.subjects}}
     tr(ng-repeat="object in exampleObjects"): td(ng-repeat="value in object") {{value}} 
+  yasqe(yasqe="selectQueryEditor",data="selectQuery")

@@ -8,7 +8,9 @@
     "angular-http-auth": "~1.2.2",
     "yasqe": "yasgui-yasqe#~2.6.3",
     "yasr": "yasgui-yasr#~2.6.3",
-    "bootstrap": "~3.3.6"
+    "bootstrap": "~3.3.6",
+    "angular-bootstrap": "~0.14.3",
+    "angular-ui-sortable": "~0.13.4"
   },
   "overrides": {
     "bootstrap": {
