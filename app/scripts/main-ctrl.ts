@@ -13,7 +13,6 @@ namespace app {
     setResults: (any) => void
     maxSubjects: number
     properties: Property[]
-    exampleObjects: {[id: string]: string}[]
 
     selectNonUniques: (Property) => void
 
@@ -21,6 +20,9 @@ namespace app {
     constraints: string
 
     selectQuery: string
+    selectQueryLink: string
+
+    shorten: () => void
   }
 
   class Property {
@@ -37,6 +39,8 @@ namespace app {
       public selectValue: boolean,
       public selectLabel: boolean
     ) {}
+    public exampleIds: string[] = []
+    public examples: string[] = []
     public nonUniqueObjects: {[id: string]: string}[]
   }
 
@@ -59,11 +63,12 @@ SELECT ?objectLabel (COUNT(*) AS ?objects) {
 GROUP BY ?objectLabel
 HAVING (?objects>1)
 `
-    constructor(private $scope: IMainScope, private $stateParams: angular.ui.IStateParamsService, private sparqlService: SparqlService, private $timeout: angular.ITimeoutService) {
+    constructor(private $scope: IMainScope, private $stateParams: angular.ui.IStateParamsService, private $http: angular.IHttpService, private sparqlService: SparqlService, private $timeout: angular.ITimeoutService) {
       $scope.endpoint = $stateParams['endpoint']
       $scope.labelLanguages = 'fi,sv,en'
       $scope.joinSeparator = ';'
-      $scope.constraints = ''
+      $scope.constraints = '  '
+      $scope.properties = []
       $scope.propertiesQuery =
 `PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -135,8 +140,6 @@ GROUP BY ?s
         )
       }
       let updateSelectQuery: () => void = () => {
-        if (!$scope.selectQueryEditor) return
-        $timeout(() => $scope.selectQueryEditor.addPrefixes($scope.propertiesQueryEditor.getPrefixesFromQuery()))
         let fields: string = ''
         let oselector: string = ''
         let groupby: string = ''
@@ -181,7 +184,6 @@ GROUP BY ?s
         $scope.selectQuery = query[0] + '  # CONSTRAINTS\n' + $scope.constraints.replace(/^\s+/gm, '  ') + '# /CONSTRAINTS' + query[2]
         query = $scope.selectQuery.split(/  # \/?OSELECTOR/)
         $scope.selectQuery = query[0] + '  # OSELECTOR\n' + oselector + '  # /OSELECTOR' + query[2]
-        if (fields === '') fields = '*'
         $scope.selectQuery = $scope.selectQuery.replace(/SELECT.*{/, 'SELECT (?s as ?id)' + fields + ' {')
         if (fields === groupby)
           $scope.selectQuery = $scope.selectQuery.replace(/#? ?GROUP BY.*/,'# GROUP BY ?s')
@@ -189,6 +191,22 @@ GROUP BY ?s
           $scope.selectQuery = $scope.selectQuery.replace(/#? ?GROUP BY.*/,'GROUP BY ?s'+groupby)
       }
       $scope.$watch('properties', updateSelectQuery,true)
+      $scope.$watch('selectQuery', (q:string) => {
+        if (q)
+          $scope.selectQueryLink = $scope.endpoint + '?query='+encodeURI(q.replace(/\s+/g,' '))+'format=csv'
+      })
+      $scope.shorten = () => {
+        this.$http.post('https://www.googleapis.com/urlshortener/v1/url?key=AIzaSyDtS96pmj2IeRdw81zobVDpCfs0rFphHvc', {
+          longUrl : $scope.selectQueryLink
+        }).then(
+          (response: angular.IHttpPromiseCallbackArg<any>) => {
+            $scope.selectQueryLink = response.data.id
+          },
+          (response: angular.IHttpPromiseCallbackArg<string>) => {
+            console.log(response)
+          }
+        )
+      }
       $scope.setResults = (results: any) => {
         $scope.constraints = $scope.propertiesQuery.split(/# \/?CONSTRAINTS/)[1]
         $scope.maxSubjects = 0
@@ -198,7 +216,7 @@ GROUP BY ?s
           if (subjects > $scope.maxSubjects) $scope.maxSubjects = subjects
           $scope.properties.push(new Property(
             binding.property,
-            binding.propertyLabel.value.replace(/\W/g, '_'),
+            binding.propertyLabel.value.replace(/ä/g,'a').replace(/ö/g,'o').replace(/Ä/g,'A').replace(/Ö/g,'O').replace(/\W/g, '_'),
             binding.resources.value === 'true',
             binding.literals.value === 'true',
             parseInt(binding.statements.value, 10),
@@ -210,15 +228,25 @@ GROUP BY ?s
             binding.resources.value === 'true' && binding.objectLabels.value !== '0'
           ))
         })
-        this.sparqlService.query($scope.endpoint, $scope.selectQuery + 'LIMIT 10').then(
-           (response: angular.IHttpPromiseCallbackArg<ISparqlBindingResult<{[id: string]: ISparqlBinding}>>) => {
-              $scope.exampleObjects = response.data.results.bindings.map(r => this.sparqlService.bindingsToObject<{[id: string]: string}>(r))
-           },
-           (response: angular.IHttpPromiseCallbackArg<string>) => {
-             console.log(response)
-           }
-        )
+        $timeout(() => $scope.selectQueryEditor.addPrefixes($scope.propertiesQueryEditor.getPrefixesFromQuery()))
         $scope.$digest()
+        $timeout(() => {
+          updateSelectQuery()
+          this.sparqlService.query($scope.endpoint, $scope.selectQuery + 'LIMIT 5').then(
+             (response: angular.IHttpPromiseCallbackArg<ISparqlBindingResult<{[id: string]: ISparqlBinding}>>) => {
+                response.data.results.bindings.map(r => this.sparqlService.bindingsToObject<{[id: string]: string}>(r)).forEach(r => {
+                  $scope.properties.forEach(p => {
+                    if (p.selectLabel && p.selectValue)
+                      p.exampleIds.push(r[p.label+'_id'])
+                    p.examples.push(r[p.label])
+                  })
+                })
+             },
+             (response: angular.IHttpPromiseCallbackArg<string>) => {
+               console.log(response)
+             }
+          )
+        })
       }
     }
   }

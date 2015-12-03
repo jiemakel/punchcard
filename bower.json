@@ -2,8 +2,8 @@
   "name": "app",
   "version": "0.0.0",
   "dependencies": {
-    "angular": "~1.4.8",
     "jquery": "~2.1.4",
+    "angular": "~1.4.8",
     "angular-ui-router": "~0.2.15",
     "angular-http-auth": "~1.2.2",
     "yasqe": "yasgui-yasqe#~2.6.3",
