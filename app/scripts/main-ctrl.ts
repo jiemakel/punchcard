@@ -193,7 +193,7 @@ GROUP BY ?s
       $scope.$watch('properties', updateSelectQuery,true)
       $scope.$watch('selectQuery', (q:string) => {
         if (q)
-          $scope.selectQueryLink = $scope.endpoint + '?format=csv&query='+encodeURIComponent(q.replace(/#.*/g,'').replace(/\s+/g,' '))
+          $scope.selectQueryLink = $scope.endpoint + '?format=csv&query='+encodeURIComponent(q.replace(/ # .*/g,'').replace(/\s+/g,' '))
       })
       $scope.shorten = () => {
         this.$http.post('https://www.googleapis.com/urlshortener/v1/url?key=AIzaSyDtS96pmj2IeRdw81zobVDpCfs0rFphHvc', {
