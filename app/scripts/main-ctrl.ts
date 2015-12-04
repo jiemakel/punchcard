@@ -75,14 +75,13 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX sf: <http://ldf.fi/functions#>
 SELECT ?property ?propertyLabel ?statements ?subjects ?objects ?objectsWithLabel ?objectLabels ?resources ?literals {
   {
-    SELECT ?property (SUM(?subjectsPerObject) AS ?subjects) (SUM(?statementsPerObject) AS ?statements) (COUNT(?objectLabel) as ?objectsWithLabel) (COUNT(DISTINCT ?objectLabel) as ?objectLabels) (COUNT(*) AS ?objects) (MAX(?resource) AS ?resources) (MAX(?literal) AS ?literals) {
+    SELECT ?property (COUNT(?objectLabel) as ?objectsWithLabel) (COUNT(DISTINCT ?objectLabel) as ?objectLabels) (COUNT(*) AS ?objects) (MAX(?resource) AS ?resources) (MAX(?literal) AS ?literals) {
       {
-        SELECT (COUNT(DISTINCT ?s) AS ?subjectsPerObject) ?property ?object (COUNT(*) as ?statementsPerObject) {
+        SELECT DISTINCT ?property ?object {
           # CONSTRAINTS
           # /CONSTRAINTS
           ?s ?property ?object .
         }
-        GROUP BY ?property ?object
       }
       OPTIONAL {
         # OLABELSELECTOR
@@ -90,6 +89,14 @@ SELECT ?property ?propertyLabel ?statements ?subjects ?objects ?objectsWithLabel
       }
       BIND(!ISLITERAL(?object) AS ?resource)
       BIND(ISLITERAL(?object) AS ?literal)
+    }
+    GROUP BY ?property
+  }
+  {
+    SELECT ?property (COUNT(*) AS ?statements) (COUNT(DISTINCT ?s) AS ?subjects) {
+          # CONSTRAINTS
+          # /CONSTRAINTS
+          ?s ?property ?object .
     }
     GROUP BY ?property
   }
@@ -143,6 +150,10 @@ GROUP BY ?s
         let fields: string = ''
         let oselector: string = ''
         let groupby: string = ''
+        let prefixes = {}
+        if ($scope.selectQueryEditor) prefixes = $scope.selectQueryEditor.getPrefixesFromQuery()
+        let nsPrefixes = {}
+        for (let prefix in prefixes) nsPrefixes[prefixes[prefix]]=prefix
         $scope.properties.filter(p => p.selectLabel || p.selectValue).forEach(p => {
           if (p.subjects === p.statements) {
             fields += ` ?${p.label}`
@@ -152,13 +163,17 @@ GROUP BY ?s
               groupby += ` ?${p.label}_id`
             }
           } else {
-            fields += `(GROUP_CONCAT(DISTINCT ?${p.label}S;separator='${$scope.joinSeparator}') AS ?${p.label}) `
+            fields += ` (GROUP_CONCAT(DISTINCT ?${p.label}S;separator='${$scope.joinSeparator}') AS ?${p.label})`
             if (p.selectValue && p.selectLabel)
-              fields += `(GROUP_CONCAT(DISTINCT ?${p.label}_idS;separator='${$scope.joinSeparator}') AS ${p.label}_id) `
+              fields += ` (GROUP_CONCAT(DISTINCT ?${p.label}_idS;separator='${$scope.joinSeparator}') AS ?${p.label}_id)`
           }
           if (p.subjects !== $scope.maxSubjects)
             oselector += '  OPTIONAL {\n  '
-          oselector += `  ?s ${this.sparqlService.bindingToString(p.id)} ?${p.label}`
+          let cns = p.id.value.replace(/(.*[/#]).*/,"$1")
+          if (nsPrefixes[cns])
+            oselector += `  ?s ${nsPrefixes[cns]}:${p.id.value.replace(/.*[/#]/,"")} ?${p.label}`
+          else
+            oselector += `  ?s ${this.sparqlService.bindingToString(p.id)} ?${p.label}`
           if (p.selectLabel) {
             oselector += '_id'
             if (p.subjects !== p.statements) oselector += 'S'
@@ -168,7 +183,11 @@ GROUP BY ?s
               oselector+='  OPTIONAL {\n  '
               if (p.subjects !== $scope.maxSubjects) oselector += '  '
             }
-            oselector += `  ?${p.label}_id sf:preferredLanguageLiteral (skos:prefLabel ${$scope.langSection} "" ?${p.label}) .\n`
+            oselector += `  ?${p.label}_id`
+            if (p.subjects !== p.statements) oselector += 'S'
+            oselector += ` sf:preferredLanguageLiteral (skos:prefLabel ${$scope.langSection} "" ?${p.label}`
+            if (p.subjects !== p.statements) oselector += 'S'
+            oselector += ') .\n'
             if (p.objects !== p.objectsWithLabel) {
               if (p.subjects !== $scope.maxSubjects) oselector += '  '
               oselector+='  }\n'
