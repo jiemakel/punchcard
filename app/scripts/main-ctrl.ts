@@ -146,7 +146,7 @@ GROUP BY ?s
           }
         )
       }
-      let updateSelectQuery: () => void = () => {
+      let getSelectQuery: (forceNoGroup?: boolean) => string = (forceNoGroup: boolean = false) => {
         let fields: string = ''
         let oselector: string = ''
         let groupby: string = ''
@@ -155,7 +155,7 @@ GROUP BY ?s
         let nsPrefixes = {}
         for (let prefix in prefixes) nsPrefixes[prefixes[prefix]]=prefix
         $scope.properties.filter(p => p.selectLabel || p.selectValue).forEach(p => {
-          if (p.subjects === p.statements) {
+          if (p.subjects === p.statements || forceNoGroup) {
             fields += ` ?${p.label}`
             groupby += ` ?${p.label}`
             if (p.selectValue && p.selectLabel) {
@@ -200,16 +200,17 @@ GROUP BY ?s
             oselector += '  }\n'
         })
         let query: string[] = $scope.selectQuery.split(/  # \/?CONSTRAINTS/)
-        $scope.selectQuery = query[0] + '  # CONSTRAINTS\n' + $scope.constraints.replace(/^\s+/gm, '  ') + '# /CONSTRAINTS' + query[2]
-        query = $scope.selectQuery.split(/  # \/?OSELECTOR/)
-        $scope.selectQuery = query[0] + '  # OSELECTOR\n' + oselector + '  # /OSELECTOR' + query[2]
-        $scope.selectQuery = $scope.selectQuery.replace(/SELECT.*{/, 'SELECT (?s as ?id)' + fields + ' {')
+        let squery = query[0] + '  # CONSTRAINTS\n' + $scope.constraints.replace(/^\s+/gm, '  ') + '# /CONSTRAINTS' + query[2]
+        query = squery.split(/  # \/?OSELECTOR/)
+        squery = query[0] + '  # OSELECTOR\n' + oselector + '  # /OSELECTOR' + query[2]
+        squery = squery.replace(/SELECT.*{/, 'SELECT (?s as ?id)' + fields + ' {')
         if (fields === groupby)
-          $scope.selectQuery = $scope.selectQuery.replace(/#? ?GROUP BY.*/,'# GROUP BY ?s')
+          squery = squery.replace(/#? ?GROUP BY.*/,'# GROUP BY ?s')
         else
-          $scope.selectQuery = $scope.selectQuery.replace(/#? ?GROUP BY.*/,'GROUP BY ?s'+groupby)
+          squery = squery.replace(/#? ?GROUP BY.*/,'GROUP BY ?s'+groupby)
+        return squery
       }
-      $scope.$watch('properties', updateSelectQuery,true)
+      $scope.$watch('properties', () => { $scope.selectQuery = getSelectQuery()},true)
       $scope.$watch('selectQuery', (q:string) => {
         if (q)
           $scope.selectQueryLink = $scope.endpoint + '?format=csv&query='+encodeURIComponent(q.replace(/ # .*/g,'').replace(/\s+/g,' '))
@@ -250,8 +251,8 @@ GROUP BY ?s
         $timeout(() => $scope.selectQueryEditor.addPrefixes($scope.propertiesQueryEditor.getPrefixesFromQuery()))
         $scope.$digest()
         $timeout(() => {
-          updateSelectQuery()
-          this.sparqlService.query($scope.endpoint, $scope.selectQuery + 'LIMIT 5').then(
+          $scope.selectQuery = getSelectQuery()
+          this.sparqlService.query($scope.endpoint, getSelectQuery(true) + 'LIMIT 5').then(
              (response: angular.IHttpPromiseCallbackArg<ISparqlBindingResult<{[id: string]: ISparqlBinding}>>) => {
                 response.data.results.bindings.map(r => this.sparqlService.bindingsToObject<{[id: string]: string}>(r)).forEach(r => {
                   $scope.properties.forEach(p => {
